@@ -15,11 +15,11 @@
 ///
 
 export const environment = {
-  appTitle: 'ThingsBoard',
+  appTitle: 'Request IoT Dashboard',
   production: true,
 // @ts-ignore
   tbVersion: TB_VERSION,
 // @ts-ignore
   supportedLangs: SUPPORTED_LANGS,
-  defaultLang: 'en_US'
+  defaultLang: 'pt_BR'
 };
