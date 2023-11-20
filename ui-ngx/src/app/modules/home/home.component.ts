@@ -14,11 +14,14 @@
 /// limitations under the License.
 ///
 
-import { AfterViewInit, Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { startWith, skip, Subject } from 'rxjs';
-import { Store } from '@ngrx/store';
-import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 
+import { startWith, skip, Subject } from 'rxjs';
+import { AfterViewInit, Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { fromEvent, Observable } from 'rxjs';
+import { select, Store } from '@ngrx/store';
+import { debounceTime, distinctUntilChanged, map, takeUntil, tap } from 'rxjs/operators';
+import { selectPlatformName,selectPlatformVersion,selectShowNameVersion,selectTenantUI } from '@core/ui/tenant-ui.selectors';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 import { PageComponent } from '@shared/components/page.component';
 import { AppState } from '@core/core.state';
@@ -32,6 +35,7 @@ import { instanceOfSearchableComponent, ISearchableComponent } from '@home/model
 import { ActiveComponentService } from '@core/services/active-component.service';
 import { RouterTabsComponent } from '@home/components/router-tabs.component';
 import { FormBuilder } from '@angular/forms';
+import { User } from '@app/shared/models/user.model';
 
 @Component({
   selector: 'tb-home',
@@ -50,7 +54,7 @@ export class HomeComponent extends PageComponent implements AfterViewInit, OnIni
   sidenavMode: 'over' | 'push' | 'side' = 'side';
   sidenavOpened = true;
 
-  logo = 'assets/logo_title_white.svg';
+  //logo = 'assets/logo_title_white.svg';
 
   @ViewChild('sidenav')
   sidenav: MatSidenav;
@@ -58,6 +62,17 @@ export class HomeComponent extends PageComponent implements AfterViewInit, OnIni
   @ViewChild('searchInput') searchInputField: ElementRef;
 
   fullscreenEnabled = screenfull.isEnabled;
+
+  authUser$: Observable<any>;
+  userDetails$: Observable<User>;
+  userDetailsString: Observable<string>;
+
+  logo: string | SafeUrl;
+  //下面是新增属性
+  logoHeight = 36;
+  name: string;
+  version: string;
+  showNameVersion: boolean;
 
   searchEnabled = false;
   showSearch = false;
@@ -68,11 +83,24 @@ export class HomeComponent extends PageComponent implements AfterViewInit, OnIni
   private destroy$ = new Subject<void>();
 
   constructor(protected store: Store<AppState>,
+    private sanitizer: DomSanitizer,
               @Inject(WINDOW) private window: Window,
               private activeComponentService: ActiveComponentService,
               public breakpointObserver: BreakpointObserver,
               private fb: FormBuilder) {
     super(store);
+    this.store.pipe(select(selectTenantUI)).subscribe(ui => {
+      if(ui){
+        this.logo = ui.logoImageUrl ? this.sanitizer.bypassSecurityTrustUrl(ui.logoImageUrl) : 'assets/logo_title_white.svg'
+        this.logoHeight = ui.logoImageHeight ? Number(ui.logoImageHeight) : 36
+      }else{
+        this.logo = 'assets/logo_title_white.svg';
+        this.logoHeight = 36;
+      }
+    })
+  this.store.pipe(select(selectPlatformName)).subscribe(res => this.name = res);
+  this.store.pipe(select(selectPlatformVersion)).subscribe(res => this.version = res);
+  this.store.pipe(select(selectShowNameVersion)).subscribe(res => this.showNameVersion = res);
   }
 
   ngOnInit() {

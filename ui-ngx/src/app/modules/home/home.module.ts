@@ -26,6 +26,7 @@ import { SideMenuComponent } from '@modules/home/menu/side-menu.component';
 import { NotificationBellComponent } from '@home/components/notification/notification-bell.component';
 import { ShowNotificationPopoverComponent } from '@home/components/notification/show-notification-popover.component';
 
+
 @NgModule({
   declarations:
     [

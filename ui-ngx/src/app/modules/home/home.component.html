@@ -24,13 +24,16 @@
     <header class="tb-nav-header">
       <mat-toolbar color="primary" class="tb-nav-header-toolbar">
         <div fxFlex="auto" fxLayout="row">
-          <img [src]="logo"
+          <img [src]="logo" [ngStyle]="{'height':logoHeight+'px'}"
                aria-label="logo" class="tb-logo-title"/>
         </div>
       </mat-toolbar>
     </header>
     <mat-toolbar color="primary" fxFlex="0%" class="tb-side-menu-toolbar" fxLayout="column" role="navigation">
       <tb-side-menu></tb-side-menu>
+    </mat-toolbar>
+    <mat-toolbar color='primary' *ngIf='showNameVersion' fxLayout='column' fxLayoutAlign='center end' style='height: 30px;'>
+      <section class='version'>{{name}} {{version}}</section>
     </mat-toolbar>
   </mat-sidenav>
   <mat-sidenav-content>

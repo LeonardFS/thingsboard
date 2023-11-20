@@ -95,4 +95,9 @@ public class JpaTenantDao extends JpaAbstractDao<TenantEntity, Tenant> implement
                 .map(TenantId::fromUUID)
                 .collect(Collectors.toList());
     }
+
+    @Override
+public TenantEntity findByDomain(String domain) {
+    return tenantRepository.findByDomain(domain);
+}
 }

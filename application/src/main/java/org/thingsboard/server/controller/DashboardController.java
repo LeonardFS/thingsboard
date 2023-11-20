@@ -60,6 +60,7 @@ import org.thingsboard.server.service.security.permission.Resource;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -674,4 +675,50 @@ public class DashboardController extends BaseController {
         }
         return customerIds;
     }
+
+    //新增俩个方法
+@PreAuthorize("hasAnyAuthority('TENANT_ADMIN')")
+@RequestMapping(value = "tenant/ui/info", method = RequestMethod.POST)
+public void saveTenantUIInfo(@RequestBody Map<String,String> params) throws ThingsboardException {
+    try {
+        TenantId tenantId = getCurrentUser().getTenantId();
+        dashboardService.saveUIByTenantId(tenantId,params);
+    } catch (Exception e) {
+        throw handleException(e);
+    }
+}
+
+@PreAuthorize("hasAnyAuthority('TENANT_ADMIN')")
+@RequestMapping(value = "tenant/ui/info", method = RequestMethod.GET)
+@ResponseBody
+public Map<String,Object> getTenantUIInfo() throws ThingsboardException {
+    try {
+        TenantId tenantId = getCurrentUser().getTenantId();
+        return dashboardService.getTenantUIInfo(tenantId);
+    } catch (Exception e) {
+        throw handleException(e);
+    }
+}
+
+//新增下面俩个方法
+@PreAuthorize("hasAnyAuthority('TENANT_ADMIN')")
+@RequestMapping(value = "tenant/ui/login/info", method = RequestMethod.POST)
+public void saveTenantLoginUIInfo(@RequestBody Map<String,String> params) throws ThingsboardException {
+    try {
+        TenantId tenantId = getCurrentUser().getTenantId();
+        dashboardService.saveLoginUIByTenantId(tenantId,params);
+    } catch (Exception e) {
+        throw handleException(e);
+    }
+}
+
+@RequestMapping(value = "noauth/ui/login", method = RequestMethod.GET)
+@ResponseBody
+public Map<String,Object> getTenantLoginUIInfo(@RequestParam(required = false) String domain,@RequestParam(required = false) String tenantId) throws ThingsboardException {
+    try {
+        return dashboardService.getTenantLoginUIInfo(domain,tenantId);
+    } catch (Exception e) {
+        throw handleException(e);
+    }
+}
 }

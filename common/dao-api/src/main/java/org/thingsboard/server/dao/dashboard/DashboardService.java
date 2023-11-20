@@ -26,6 +26,7 @@ import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.dao.entity.EntityDaoService;
 
+import java.util.Map;
 import java.util.List;
 
 public interface DashboardService extends EntityDaoService {
@@ -73,5 +74,13 @@ public interface DashboardService extends EntityDaoService {
     DashboardInfo findFirstDashboardInfoByTenantIdAndName(TenantId tenantId, String name);
 
     List<Dashboard> findTenantDashboardsByTitle(TenantId tenantId, String title);
+
+    void saveUIByTenantId(TenantId tenantId, Map<String, String> params);
+
+    Map<String,Object> getTenantUIInfo(TenantId tenantId);
+
+    void saveLoginUIByTenantId(TenantId tenantId, Map<String, String> params);
+
+Map<String, Object> getTenantLoginUIInfo(String domain,String tenantId);
 
 }

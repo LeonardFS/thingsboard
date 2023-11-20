@@ -27,6 +27,7 @@ import { UtilsService } from '@core/services/utils.service';
 import { DialogService } from '@core/services/dialog.service';
 import { TranslateService } from '@ngx-translate/core';
 import { FileSizePipe } from '@shared/pipe/file-size.pipe';
+import { ActionNotificationShow } from '@app/core/notification/notification.actions';
 
 @Component({
   selector: 'tb-image-input',
@@ -47,6 +48,12 @@ export class ImageInputComponent extends PageComponent implements AfterViewInit,
 
   @Input()
   maxSizeByte: number;
+
+  @Input()
+  maxKBytes: number;
+
+  @Input()
+  imgSuffix: Array<string>;
 
   private requiredValue: boolean;
 
@@ -98,6 +105,13 @@ export class ImageInputComponent extends PageComponent implements AfterViewInit,
     this.autoUploadSubscription = this.flow.events$.subscribe(event => {
       if (event.type === 'fileAdded') {
         const file = (event.event[0] as flowjs.FlowFile).file;
+        if (this.maxKBytes && (file.size / 1024) > this.maxKBytes) {
+          this.store.dispatch(new ActionNotificationShow({
+            message: 'Website image is too large. Maximum allowed website image size ' + this.maxKBytes + ' KBytes.',
+            type: 'error'
+          }));
+          return;
+        }
         if (this.maxSizeByte && this.maxSizeByte < file.size) {
           this.dialog.alert(
             this.translate.instant('dashboard.cannot-upload-file'),

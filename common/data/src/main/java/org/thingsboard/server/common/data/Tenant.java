@@ -15,16 +15,18 @@
  */
 package org.thingsboard.server.common.data;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
-import lombok.EqualsAndHashCode;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.TenantProfileId;
 import org.thingsboard.server.common.data.validation.Length;
 import org.thingsboard.server.common.data.validation.NoXss;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.EqualsAndHashCode;
 
 @ApiModel
 @EqualsAndHashCode(callSuper = true)
@@ -57,6 +59,8 @@ public class Tenant extends ContactBased<TenantId> implements HasTenantId, HasTi
         this.title = tenant.getTitle();
         this.region = tenant.getRegion();
         this.tenantProfileId = tenant.getTenantProfileId();
+            //增加这行
+    this.domain = tenant.getDomain();
     }
 
     public String getTitle() {
@@ -199,5 +203,18 @@ public class Tenant extends ContactBased<TenantId> implements HasTenantId, HasTi
         builder.append("]");
         return builder.toString();
     }
+
+    //添加属性及get set
+private String domain;
+
+public String getDomain() {
+        return domain;
+}
+
+public void setDomain(String domain) {
+    this.domain = domain;
+}
+
+
 
 }

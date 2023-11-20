@@ -91,6 +91,25 @@
         "count": "Count",
         "none": "None"
     },
+    "platform": {
+        "logoHeight": "Logo Height",
+        "appIcon": "Icon",
+        "loginDomainName": "Domain",
+        "loginDomainName-required": "Domain is required",
+        "loginProhibitNotify": "Error login",
+        "login-background-color": "Background color",
+        "login-form-background-color": "Form background color",
+        "login-form-text-color": "Fomr text color",
+        "login-form-icon-color": "form icon color",
+        "login-form-input-color": "Form input color",
+        "login-button-color": "Form button color",
+        "login-button-text-color": "Form text color",
+        "loginBGImage": "Login background image"
+      },
+      "system-settings": {
+        "system-settings": "Settings",
+        "login-ui": "Login UI"
+      },
     "admin": {
         "settings": "Settings",
         "general": "General",

@@ -33,12 +33,16 @@ import { NotificationState } from '@app/core/notification/notification.models';
 import { notificationReducer } from '@app/core/notification/notification.reducer';
 import { NotificationEffects } from '@app/core/notification/notification.effects';
 import { AuthEffects } from '@core/auth/auth.effects';
+import { LoginUIState, TenantUIState } from '@core/ui/tenant-ui.models';
+import { loginUIReducer, tenantUIReducer } from '@core/ui/tenant-ui.reducer';
 
 export const reducers: ActionReducerMap<AppState> = {
   load: loadReducer,
   auth: authReducer,
   settings: settingsReducer,
-  notification: notificationReducer
+  notification: notificationReducer,
+  tenantUI: tenantUIReducer,
+  loginUI: loginUIReducer,
 };
 
 export const metaReducers: MetaReducer<AppState>[] = [
@@ -60,4 +64,6 @@ export interface AppState {
   auth: AuthState;
   settings: SettingsState;
   notification: NotificationState;
+  tenantUI: TenantUIState;
+  loginUI: LoginUIState;
 }

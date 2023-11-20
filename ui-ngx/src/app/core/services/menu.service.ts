@@ -608,6 +608,22 @@ export class MenuService {
             icon: 'settings_applications'
           },
           {
+            id: 'login-ui',
+            name: 'system-settings.login-ui',
+            fullName: 'admin.login-ui',
+            type: 'link',
+            path: '/settings/login-ui',
+            icon: 'color_lens',
+          },
+          {
+            id: 'custom-ui',
+            name: 'system-settings.custom-ui',
+            fullName: 'admin.custom-ui',
+            type: 'link',
+            path: '/settings/custom-ui',
+            icon: 'color_lens',
+          },
+          {
             id: 'notification_settings',
             name: 'admin.notifications',
             fullName: 'admin.notifications-settings',

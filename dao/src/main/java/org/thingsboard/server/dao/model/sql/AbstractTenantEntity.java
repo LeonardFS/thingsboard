@@ -74,6 +74,9 @@ public abstract class AbstractTenantEntity<T extends Tenant> extends BaseSqlEnti
     @Column(name = ModelConstants.TENANT_TENANT_PROFILE_ID_PROPERTY, columnDefinition = "uuid")
     private UUID tenantProfileId;
 
+@Column(name = "domain")
+private String domain;
+
     public AbstractTenantEntity() {
         super();
     }
@@ -97,6 +100,7 @@ public abstract class AbstractTenantEntity<T extends Tenant> extends BaseSqlEnti
         if (tenant.getTenantProfileId() != null) {
             this.tenantProfileId = tenant.getTenantProfileId().getId();
         }
+        this.domain=tenant.getDomain();
     }
 
     public AbstractTenantEntity(TenantEntity tenantEntity) {
@@ -133,8 +137,12 @@ public abstract class AbstractTenantEntity<T extends Tenant> extends BaseSqlEnti
         if (tenantProfileId != null) {
             tenant.setTenantProfileId(new TenantProfileId(tenantProfileId));
         }
+            tenant.setDomain(domain);
         return tenant;
     }
+
+
+
 
 
 }

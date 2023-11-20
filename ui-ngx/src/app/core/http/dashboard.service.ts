@@ -17,10 +17,11 @@
 import { Inject, Injectable } from '@angular/core';
 import { defaultHttpOptions, defaultHttpOptionsFromConfig, RequestConfig } from './http-utils';
 import { Observable } from 'rxjs';
+
 import { HttpClient } from '@angular/common/http';
 import { PageLink } from '@shared/models/page/page-link';
 import { PageData } from '@shared/models/page/page-data';
-import { Dashboard, DashboardInfo, HomeDashboard, HomeDashboardInfo } from '@shared/models/dashboard.models';
+import { Dashboard, DashboardInfo, HomeDashboard, HomeDashboardInfo, LoginUIInfo, UIInfo } from '@shared/models/dashboard.models';
 import { WINDOW } from '@core/services/window.service';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter, map, publishReplay, refCount } from 'rxjs/operators';
@@ -93,6 +94,34 @@ export class DashboardService {
                                        config?: RequestConfig) {
     return this.http.delete(`/api/customer/${customerId}/dashboard/${dashboardId}`, defaultHttpOptionsFromConfig(config));
   }
+
+  public getTenantUIInfo(config?: RequestConfig): Observable<UIInfo> {
+    return this.http.get<UIInfo>(`/api/tenant/ui/info`, defaultHttpOptionsFromConfig(config));
+  }
+  //添加此方法
+  public saveTenantUIInfo(uiInfo: UIInfo, config?: RequestConfig) {
+    return this.http.post<UIInfo>('/api/tenant/ui/info', uiInfo, defaultHttpOptionsFromConfig(config));
+  }
+
+  	//新增
+  public getTenantLoginUIInfo(domain?:string,tenantId?:string,config?: RequestConfig): Observable<LoginUIInfo> {
+      let url = `/api/noauth/ui/login?`;
+      if(domain !== undefined){
+        url = url + `domain=` + domain;
+      }
+      if(tenantId !== undefined){
+        if(domain !== undefined){
+          url = url + `&`
+        }
+        url = url + `tenantId=` + tenantId;
+      }
+      return this.http.get<LoginUIInfo>(url,
+        defaultHttpOptionsFromConfig(config));
+    }
+    //新增
+    public saveTenantLoginUIInfo(uiInfo: LoginUIInfo, config?: RequestConfig) {
+      return this.http.post<LoginUIInfo>('/api/tenant/ui/login/info', uiInfo, defaultHttpOptionsFromConfig(config));
+    }
 
   public makeDashboardPublic(dashboardId: string, config?: RequestConfig): Observable<Dashboard> {
     return this.http.post<Dashboard>(`/api/customer/public/dashboard/${dashboardId}`, null,

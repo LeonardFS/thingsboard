@@ -19,6 +19,20 @@
 :host {
   display: flex;
   flex: 1 1 0;
+
+  img.tb-logo-title {
+    width: 280px;
+    height: 60px;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transform: none;
+
+    &:focus {
+      outline: 0;
+    }
+  }
+
   .tb-login-content {
     margin-top: 36px;
     margin-bottom: 76px;

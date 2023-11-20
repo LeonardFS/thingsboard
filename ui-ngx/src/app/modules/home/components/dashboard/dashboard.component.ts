@@ -51,7 +51,7 @@ import { animatedScroll, deepClone, isDefined } from '@app/core/utils';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MediaBreakpoints } from '@shared/models/constants';
 import { IAliasController, IStateController } from '@app/core/api/widget-api.models';
-import { Widget, WidgetPosition } from '@app/shared/models/widget.models';
+import { Widget, WidgetPosition, Datasource, DatasourceData } from '@app/shared/models/widget.models';
 import { MatMenuTrigger } from '@angular/material/menu';
 import { SafeStyle } from '@angular/platform-browser';
 import { distinct } from 'rxjs/operators';
@@ -59,7 +59,9 @@ import { ResizeObserver } from '@juggle/resize-observer';
 import { UtilsService } from '@core/services/utils.service';
 import { WidgetComponentAction, WidgetComponentActionType } from '@home/components/widget/widget-container.component';
 import { TbPopoverComponent } from '@shared/components/popover.component';
-
+import { WidgetContext } from '@home/models/widget-component.models';
+import XLSX, { BookType } from 'xlsx';
+import _ from 'lodash';
 @Component({
   selector: 'tb-dashboard',
   templateUrl: './dashboard.component.html',
@@ -437,6 +439,14 @@ export class DashboardComponent extends PageComponent implements IDashboardCompo
     }
   }
 
+  exportData($event: Event, ctx: WidgetContext, fileType) {
+  	if ($event) {
+      $event.stopPropagation();
+    }
+    const export_data = this.data_format(ctx.datasources, ctx.data);
+    this.export(export_data, fileType, ctx.widgetConfig.title);
+}
+
   private removeWidget($event: Event, widget: DashboardWidget) {
     if ($event) {
       $event.stopPropagation();
@@ -605,5 +615,85 @@ export class DashboardComponent extends PageComponent implements IDashboardCompo
     }
     return isMobileSize;
   }
+
+  data_format(datasources: Datasource[], data: DatasourceData[]) {
+    let aggregation = [];
+    const header = ['timestamp', 'name', 'type'];
+    let firstHeader = true;
+    datasources.forEach(ds => {
+      let entity = [];
+      let firstTs = true;
+      ds.dataKeys.forEach(dk => {
+        if (firstHeader) {
+          header.push(dk.name);
+        }
+        data.forEach(dt => {
+          if (dt.dataKey.name === dk.name && dt.datasource.name === ds.entityName) {
+            entity.push([dk.name, _.flatMap(dt.data, (arr) => arr[1])]);
+            if ((dt.data[0] && dt.data[0][0]) && firstTs) {
+              firstTs = false;
+              entity.splice(0, 0, ['timestamp', _.flatMap(dt.data, (arr) => arr[0].toString())]);
+            }
+          }
+        });
+      });
+      firstHeader = false;
+      aggregation.push([ds.entityName, ds.entityType, entity]);
+    });
+    // console.log(aggregation);
+    let result = [];
+    aggregation.forEach((item, i) => {
+      let entityName = item[0];
+      let entityType = item[1];
+      let v = item[2];
+
+      const dataKeyData = v.filter(item => item[1].length > 0)[0]
+      if(dataKeyData){
+        for (let i = 0; i < dataKeyData[1].length; i++) {
+          let row = [];
+          v.forEach((_item, j) => {
+            if (j == 0) {
+              row[0] = _item[1][i];
+              row[1] = entityName;
+              row[2] = entityType;
+            } else {
+              row[j + 2] = _item[1][i] ? _item[1][i] : '';
+            }
+          });
+          result.push(row);
+        }
+      }
+    });
+    result.splice(0, 0, header);
+    // console.log(result);
+    return result;
+  }
+
+  export(data: Array<any>, fileType: BookType, title: string): void {
+    const ws: XLSX.WorkSheet = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = ([
+      { wch: 13 }
+    ]);
+    const output_file_name = title + '-' + Date.parse(new Date().toString()) + '.' + fileType;
+    if (fileType === 'csv') {
+      const csv = XLSX.utils.sheet_to_csv(ws, { FS: ';', RS: '\n' });
+      this.export_csv(csv, output_file_name);
+    } else {
+      const wb: XLSX.WorkBook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+      XLSX.writeFile(wb, output_file_name, { bookType: fileType, type: 'array'});
+    }
+  }
+
+  export_csv(data, fileName) {
+    const uri = 'data:text/csv;charset=utf-8,\ufeff' + encodeURIComponent(data);
+    const downloadLink = document.createElement('a');
+    downloadLink.href = uri;
+    downloadLink.download = fileName;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+  }
+
 
 }

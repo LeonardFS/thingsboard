@@ -123,6 +123,37 @@ export interface DashboardConfiguration {
   [key: string]: any;
 }
 
+export interface UIInfo {
+  applicationTitle?: string;
+  iconImageUrl?: string;
+  logoImageUrl?: string;
+  logoImageHeight?: string;
+  platformMainColor?: string;
+  platformTextMainColor?: string;
+  platformMenuColorActive?: string;
+  platformMenuColorHover?: string;
+  platformButtonColor?: string;
+  showNameVersion: boolean;
+  platformName?: string;
+  platformVersion?: string;
+}
+
+export interface LoginUIInfo {
+  loginDomainName?: string;
+  loginAppTitle?: string;s
+  loginIconImageUrl?: string;
+  loginBGImage?: string;
+  loginLogoImageUrl?: string;
+  loginLogoImageHeight?: string;
+  loginBGColor?: string;
+  loginFormBGColor?: string;
+  loginFormTextColor?: string;
+  loginFormIconColor?: string;
+  loginFormInputColor?: string;
+  loginButtonColor?: string;
+  loginButtonTextColor?: string;
+}
+
 export interface Dashboard extends DashboardInfo {
   configuration?: DashboardConfiguration;
   dialogRef?: MatDialogRef<any>;

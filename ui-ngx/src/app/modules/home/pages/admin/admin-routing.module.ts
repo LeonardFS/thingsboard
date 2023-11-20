@@ -39,6 +39,8 @@ import { TwoFactorAuthSettingsComponent } from '@home/pages/admin/two-factor-aut
 import { widgetsLibraryRoutes } from '@home/pages/widget/widget-library-routing.module';
 import { RouterTabsComponent } from '@home/components/router-tabs.component';
 import { auditLogsRoutes } from '@home/pages/audit-log/audit-log-routing.module';
+import { CustomUiComponent } from '../custom-ui/custom-ui.component';
+import { LoginUiComponent } from '../login-ui/login-ui.component';
 
 @Injectable()
 export class OAuth2LoginProcessingUrlResolver implements Resolve<string> {
@@ -171,6 +173,112 @@ const routes: Routes = [
             icon: 'mdi:message-badge'
           }
         }
+      },
+      {
+        path: 'security-settings',
+        component: SecuritySettingsComponent,
+        canDeactivate: [ConfirmOnExitGuard],
+        data: {
+          auth: [Authority.SYS_ADMIN],
+          title: 'admin.security-settings',
+          breadcrumb: {
+            label: 'admin.security-settings',
+            icon: 'security'
+          }
+        }
+      },
+      {
+        path: 'oauth2',
+        component: OAuth2SettingsComponent,
+        canDeactivate: [ConfirmOnExitGuard],
+        data: {
+          auth: [Authority.SYS_ADMIN],
+          title: 'admin.oauth2.oauth2',
+          breadcrumb: {
+            label: 'admin.oauth2.oauth2',
+            icon: 'security'
+          }
+        },
+        resolve: {
+          loginProcessingUrl: OAuth2LoginProcessingUrlResolver
+        }
+      },
+      {
+        path: 'home',
+        component: HomeSettingsComponent,
+        canDeactivate: [ConfirmOnExitGuard],
+        data: {
+          auth: [Authority.TENANT_ADMIN],
+          title: 'admin.home-settings',
+          breadcrumb: {
+            label: 'admin.home-settings',
+            icon: 'settings_applications'
+          }
+        }
+      },
+      {
+        path: 'custom-ui',
+        component: CustomUiComponent,
+        canDeactivate: [ConfirmOnExitGuard],
+        data: {
+          auth: [Authority.TENANT_ADMIN],
+          title: 'system-settings.custom-ui',
+          breadcrumb: {
+            label: 'system-settings.custom-ui',
+            icon: 'color_lens'
+          }
+        }
+      },
+      {
+        path: 'login-ui',
+        component: LoginUiComponent,
+        canDeactivate: [ConfirmOnExitGuard],
+        data: {
+          auth: [Authority.TENANT_ADMIN],
+          title: 'system-settings.login-ui',
+          breadcrumb: {
+            label: 'system-settings.login-ui',
+            icon: 'picture_in_picture_alt'
+          }
+        }
+      },
+      {
+        path: 'resources-library',
+        data: {
+          breadcrumb: {
+            label: 'resource.resources-library',
+            icon: 'folder'
+          }
+        },
+        children: [
+          {
+            path: '',
+            component: EntitiesTableComponent,
+            data: {
+              auth: [Authority.TENANT_ADMIN, Authority.SYS_ADMIN],
+              title: 'resource.resources-library',
+            },
+            resolve: {
+              entitiesTableConfig: ResourcesLibraryTableConfigResolver
+            }
+          },
+          {
+            path: ':entityId',
+            component: EntityDetailsPageComponent,
+            canDeactivate: [ConfirmOnExitGuard],
+            data: {
+              breadcrumb: {
+                labelFunction: entityDetailsPageBreadcrumbLabelFunction,
+                icon: 'folder'
+              } as BreadCrumbConfig<EntityDetailsPageComponent>,
+              auth: [Authority.TENANT_ADMIN, Authority.SYS_ADMIN],
+              title: 'resource.resources-library'
+            },
+            resolve: {
+              entitiesTableConfig: ResourcesLibraryTableConfigResolver
+            }
+          }
+        ]
       },
       {
         path: 'queues',
