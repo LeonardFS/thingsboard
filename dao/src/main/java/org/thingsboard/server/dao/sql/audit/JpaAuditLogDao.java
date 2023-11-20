@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2022 The Thingsboard Authors
+ * Copyright © 2016-2023 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ import org.thingsboard.server.dao.audit.AuditLogDao;
 import org.thingsboard.server.dao.model.ModelConstants;
 import org.thingsboard.server.dao.model.sql.AuditLogEntity;
 import org.thingsboard.server.dao.sql.JpaAbstractDao;
-import org.thingsboard.server.dao.util.SqlDao;
 import org.thingsboard.server.dao.sqlts.insert.sql.SqlPartitioningRepository;
+import org.thingsboard.server.dao.util.SqlDao;
 
 import java.util.List;
 import java.util.Objects;
@@ -60,7 +60,7 @@ public class JpaAuditLogDao extends JpaAbstractDao<AuditLogEntity, AuditLog> imp
     @Value("${sql.ttl.audit_logs.ttl:0}")
     private long ttlInSec;
 
-    private static final String TABLE_NAME = ModelConstants.AUDIT_LOG_COLUMN_FAMILY_NAME;
+    private static final String TABLE_NAME = ModelConstants.AUDIT_LOG_TABLE_NAME;
 
     @Override
     protected Class<AuditLogEntity> getEntityClass() {
@@ -99,7 +99,7 @@ public class JpaAuditLogDao extends JpaAbstractDao<AuditLogEntity, AuditLog> imp
                                 tenantId,
                                 entityId.getEntityType(),
                                 entityId.getId(),
-                                Objects.toString(pageLink.getTextSearch(), ""),
+                                pageLink.getTextSearch(),
                                 pageLink.getStartTime(),
                                 pageLink.getEndTime(),
                                 actionTypes,
@@ -113,7 +113,7 @@ public class JpaAuditLogDao extends JpaAbstractDao<AuditLogEntity, AuditLog> imp
                         .findAuditLogsByTenantIdAndCustomerId(
                                 tenantId,
                                 customerId.getId(),
-                                Objects.toString(pageLink.getTextSearch(), ""),
+                                pageLink.getTextSearch(),
                                 pageLink.getStartTime(),
                                 pageLink.getEndTime(),
                                 actionTypes,
@@ -127,7 +127,7 @@ public class JpaAuditLogDao extends JpaAbstractDao<AuditLogEntity, AuditLog> imp
                         .findAuditLogsByTenantIdAndUserId(
                                 tenantId,
                                 userId.getId(),
-                                Objects.toString(pageLink.getTextSearch(), ""),
+                                pageLink.getTextSearch(),
                                 pageLink.getStartTime(),
                                 pageLink.getEndTime(),
                                 actionTypes,
@@ -139,7 +139,7 @@ public class JpaAuditLogDao extends JpaAbstractDao<AuditLogEntity, AuditLog> imp
         return DaoUtil.toPageData(
                 auditLogRepository.findByTenantId(
                         tenantId,
-                        Objects.toString(pageLink.getTextSearch(), ""),
+                        pageLink.getTextSearch(),
                         pageLink.getStartTime(),
                         pageLink.getEndTime(),
                         actionTypes,

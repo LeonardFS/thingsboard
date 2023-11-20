@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2022 The Thingsboard Authors
+/// Copyright © 2016-2023 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -25,7 +25,8 @@ export interface ImportWidgetResult {
 
 export interface WidgetsBundleItem {
   widgetsBundle: WidgetsBundle;
-  widgetTypes: WidgetTypeDetails[];
+  widgetTypes?: WidgetTypeDetails[];
+  widgetTypeFqns?: string[];
 }
 
 export interface CsvToJsonConfig {
@@ -64,14 +65,15 @@ export enum ImportEntityColumnType {
   lwm2mServerSecurityMode = 'LWM2M_SERVER_SECURITY_MODE',
   lwm2mServerClientPublicKeyOrId = 'LWM2M_SERVER_CLIENT_PUBLIC_KEY_OR_ID',
   lwm2mServerClientSecretKey = 'LWM2M_SERVER_CLIENT_SECRET_KEY',
+  snmpHost = 'SNMP_HOST',
+  snmpPort = 'SNMP_PORT',
+  snmpVersion = 'SNMP_VERSION',
+  snmpCommunityString = 'SNMP_COMMUNITY_STRING',
   isGateway = 'IS_GATEWAY',
   description = 'DESCRIPTION',
   routingKey = 'ROUTING_KEY',
   secret = 'SECRET'
 }
-
-export const importEntityObjectColumns =
-  [ImportEntityColumnType.name, ImportEntityColumnType.type, ImportEntityColumnType.accessToken];
 
 export const importEntityColumnTypeTranslations = new Map<ImportEntityColumnType, string>(
   [
@@ -98,6 +100,10 @@ export const importEntityColumnTypeTranslations = new Map<ImportEntityColumnType
     [ImportEntityColumnType.lwm2mServerSecurityMode, 'import.column-type.lwm2m.lwm2m-server-security-mode'],
     [ImportEntityColumnType.lwm2mServerClientPublicKeyOrId, 'import.column-type.lwm2m.lwm2m-server-public-key-id'],
     [ImportEntityColumnType.lwm2mServerClientSecretKey, 'import.column-type.lwm2m.lwm2m-server-secret-key'],
+    [ImportEntityColumnType.snmpHost, 'import.column-type.snmp.host'],
+    [ImportEntityColumnType.snmpPort, 'import.column-type.snmp.port'],
+    [ImportEntityColumnType.snmpVersion, 'import.column-type.snmp.version'],
+    [ImportEntityColumnType.snmpCommunityString, 'import.column-type.snmp.community-string'],
     [ImportEntityColumnType.isGateway, 'import.column-type.isgateway'],
     [ImportEntityColumnType.description, 'import.column-type.description'],
     [ImportEntityColumnType.routingKey, 'import.column-type.routing-key'],
@@ -151,6 +157,11 @@ export const JSON_TYPE: FileType = {
 export const ZIP_TYPE: FileType = {
   mimeType: 'application/zip',
   extension: 'zip'
+};
+
+export const CSV_TYPE: FileType = {
+  mimeType: 'attachament/csv',
+  extension: 'csv'
 };
 
 export function convertCSVToJson(csvdata: string, config: CsvToJsonConfig,

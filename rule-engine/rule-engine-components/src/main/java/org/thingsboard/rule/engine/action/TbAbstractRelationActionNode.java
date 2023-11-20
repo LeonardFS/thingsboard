@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2022 The Thingsboard Authors
+ * Copyright © 2016-2023 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,8 +57,8 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static org.thingsboard.common.util.DonAsynchron.withCallback;
-import static org.thingsboard.rule.engine.api.TbRelationTypes.FAILURE;
-import static org.thingsboard.rule.engine.api.TbRelationTypes.SUCCESS;
+import static org.thingsboard.server.common.data.msg.TbNodeConnectionType.FAILURE;
+import static org.thingsboard.server.common.data.msg.TbNodeConnectionType.SUCCESS;
 
 @Slf4j
 public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationActionNodeConfiguration> implements TbNode {
@@ -258,7 +258,7 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
                     break;
                 case USER:
                     UserService userService = ctx.getUserService();
-                    User user = userService.findUserByEmail(ctx.getTenantId(), entitykey.getEntityName());
+                    User user = userService.findUserByTenantIdAndEmail(ctx.getTenantId(), entitykey.getEntityName());
                     if (user != null) {
                         targetEntity.setEntityId(user.getId());
                     }

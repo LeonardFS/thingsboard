@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2022 The Thingsboard Authors
+ * Copyright © 2016-2023 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ public class TbRenameKeysNode implements TbNode {
             }
             metaData = new TbMsgMetaData(metaDataMap);
         } else {
-            JsonNode dataNode = JacksonUtil.toJsonNode(msg.getData());
+            JsonNode dataNode = JacksonUtil.toJsonNode(data);
             if (dataNode.isObject()) {
                 ObjectNode msgData = (ObjectNode) dataNode;
                 for (Map.Entry<String, String> entry : renameKeysMapping.entrySet()) {
@@ -89,7 +89,7 @@ public class TbRenameKeysNode implements TbNode {
             }
         }
         if (msgChanged) {
-            ctx.tellSuccess(TbMsg.transformMsg(msg, msg.getType(), msg.getOriginator(), metaData, data));
+            ctx.tellSuccess(TbMsg.transformMsg(msg, metaData, data));
         } else {
             ctx.tellSuccess(msg);
         }

@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2022 The Thingsboard Authors
+ * Copyright © 2016-2023 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,23 +27,28 @@ import java.util.UUID;
 public interface TbResourceInfoRepository extends JpaRepository<TbResourceInfoEntity, UUID> {
 
     @Query("SELECT tr FROM TbResourceInfoEntity tr WHERE " +
-            "LOWER(tr.title) LIKE LOWER(CONCAT('%', :searchText, '%'))" +
+            "(:searchText IS NULL OR ilike(tr.title, CONCAT('%', :searchText, '%')) = true) " +
             "AND (tr.tenantId = :tenantId " +
             "OR (tr.tenantId = :systemAdminId " +
             "AND NOT EXISTS " +
             "(SELECT sr FROM TbResourceEntity sr " +
             "WHERE sr.tenantId = :tenantId " +
             "AND tr.resourceType = sr.resourceType " +
-            "AND tr.resourceKey = sr.resourceKey)))")
+            "AND tr.resourceKey = sr.resourceKey)))" +
+            "AND (:resourceType IS NULL OR tr.resourceType = :resourceType)")
     Page<TbResourceInfoEntity> findAllTenantResourcesByTenantId(@Param("tenantId") UUID tenantId,
                                                                 @Param("systemAdminId") UUID sysadminId,
+                                                                @Param("resourceType") String resourceType,
                                                                 @Param("searchText") String searchText,
                                                                 Pageable pageable);
 
     @Query("SELECT ri FROM TbResourceInfoEntity ri WHERE " +
             "ri.tenantId = :tenantId " +
-            "AND LOWER(ri.title) LIKE LOWER(CONCAT('%', :searchText, '%'))")
+            "AND (:resourceType IS NULL OR ri.resourceType = :resourceType)" +
+            "AND (:searchText IS NULL OR ilike(ri.title, CONCAT('%', :searchText, '%')) = true)")
     Page<TbResourceInfoEntity> findTenantResourcesByTenantId(@Param("tenantId") UUID tenantId,
+                                                             @Param("resourceType") String resourceType,
                                                              @Param("searchText") String searchText,
                                                              Pageable pageable);
+
 }

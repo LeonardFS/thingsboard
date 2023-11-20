@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2022 The Thingsboard Authors
+ * Copyright © 2016-2023 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,9 +34,9 @@ import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.plugin.ComponentType;
 import org.thingsboard.server.common.msg.TbMsg;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Slf4j
 @RuleNode(
@@ -51,31 +51,29 @@ import java.util.List;
         configDirective = "tbTransformationNodeChangeOriginatorConfig",
         icon = "find_replace"
 )
-public class TbChangeOriginatorNode extends TbAbstractTransformNode {
+public class TbChangeOriginatorNode extends TbAbstractTransformNode<TbChangeOriginatorNodeConfiguration> {
 
-    protected static final String CUSTOMER_SOURCE = "CUSTOMER";
-    protected static final String TENANT_SOURCE = "TENANT";
-    protected static final String RELATED_SOURCE = "RELATED";
-    protected static final String ALARM_ORIGINATOR_SOURCE = "ALARM_ORIGINATOR";
-    protected static final String ENTITY_SOURCE = "ENTITY_SOURCE";
-
-    private TbChangeOriginatorNodeConfiguration config;
+    private static final String CUSTOMER_SOURCE = "CUSTOMER";
+    private static final String TENANT_SOURCE = "TENANT";
+    private static final String RELATED_SOURCE = "RELATED";
+    private static final String ALARM_ORIGINATOR_SOURCE = "ALARM_ORIGINATOR";
+    private static final String ENTITY_SOURCE = "ENTITY";
 
     @Override
-    public void init(TbContext ctx, TbNodeConfiguration configuration) throws TbNodeException {
-        this.config = TbNodeUtils.convert(configuration, TbChangeOriginatorNodeConfiguration.class);
+    protected TbChangeOriginatorNodeConfiguration loadNodeConfiguration(TbContext ctx, TbNodeConfiguration configuration) throws TbNodeException {
+        var config = TbNodeUtils.convert(configuration, TbChangeOriginatorNodeConfiguration.class);
         validateConfig(config);
-        setConfig(config);
+        return config;
     }
 
     @Override
     protected ListenableFuture<List<TbMsg>> transform(TbContext ctx, TbMsg msg) {
-        ListenableFuture<? extends EntityId> newOriginator = getNewOriginator(ctx, msg);
-        return Futures.transform(newOriginator, n -> {
-            if (n == null || n.isNullUid()) {
-                return null;
+        ListenableFuture<? extends EntityId> newOriginatorFuture = getNewOriginator(ctx, msg);
+        return Futures.transformAsync(newOriginatorFuture, newOriginator -> {
+            if (newOriginator == null || newOriginator.isNullUid()) {
+                return Futures.immediateFailedFuture(new NoSuchElementException("Failed to find new originator!"));
             }
-            return Collections.singletonList((ctx.transformMsg(msg, msg.getType(), n, msg.getMetaData(), msg.getData())));
+            return Futures.immediateFuture(List.of(ctx.transformMsgOriginator(msg, newOriginator)));
         }, ctx.getDbCallbackExecutor());
     }
 
@@ -127,8 +125,8 @@ public class TbChangeOriginatorNode extends TbAbstractTransformNode {
                 log.error("EntityNamePattern not specified for type [{}]", conf.getEntityType());
                 throw new IllegalArgumentException("Wrong config for [{}] in TbChangeOriginatorNode!" + ENTITY_SOURCE);
             }
+            EntitiesByNameAndTypeLoader.checkEntityType(EntityType.valueOf(conf.getEntityType()));
         }
-
     }
 
 }

@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2022 The Thingsboard Authors
+/// Copyright © 2016-2023 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -14,26 +14,34 @@
 /// limitations under the License.
 ///
 
-import { BaseData } from '@shared/models/base-data';
+import { BaseData, ExportableEntity } from '@shared/models/base-data';
 import { TenantId } from '@shared/models/id/tenant-id';
 import { WidgetTypeId } from '@shared/models/id/widget-type-id';
 import { AggregationType, ComparisonDuration, Timewindow } from '@shared/models/time/time.models';
 import { EntityType } from '@shared/models/entity-type.models';
-import { AlarmSearchStatus, AlarmSeverity } from '@shared/models/alarm.models';
 import { DataKeyType } from './telemetry/telemetry.models';
 import { EntityId } from '@shared/models/id/entity-id';
 import * as moment_ from 'moment';
-import { EntityDataPageLink, EntityFilter, KeyFilter } from '@shared/models/query/query.models';
+import {
+  AlarmFilter,
+  AlarmFilterConfig,
+  EntityDataPageLink,
+  EntityFilter,
+  KeyFilter
+} from '@shared/models/query/query.models';
 import { PopoverPlacement } from '@shared/components/popover.models';
 import { PageComponent } from '@shared/components/page.component';
-import { AfterViewInit, Directive, EventEmitter, Inject, OnInit } from '@angular/core';
+import { AfterViewInit, Directive, EventEmitter, Inject, OnInit, Type } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AppState } from '@core/core.state';
-import { AbstractControl, FormGroup } from '@angular/forms';
+import { AbstractControl, UntypedFormGroup } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { Dashboard } from '@shared/models/dashboard.models';
 import { IAliasController } from '@core/api/widget-api.models';
-import { isEmptyStr } from '@core/utils';
+import { isNotEmptyStr } from '@core/utils';
+import { WidgetConfigComponentData } from '@home/models/widget-component.models';
+import { ComponentStyle, Font, TimewindowStyle } from '@shared/models/widget-settings.models';
+import { NULL_UUID } from '@shared/models/id/has-uuid';
 
 export enum widgetType {
   timeseries = 'timeseries',
@@ -44,14 +52,12 @@ export enum widgetType {
 }
 
 export interface WidgetTypeTemplate {
-  bundleAlias: string;
-  alias: string;
+  fullFqn: string;
 }
 
 export interface WidgetTypeData {
   name: string;
   icon: string;
-  isMdiIcon?: boolean;
   configHelpLinkId: string;
   template: WidgetTypeTemplate;
 }
@@ -65,8 +71,7 @@ export const widgetTypesData = new Map<widgetType, WidgetTypeData>(
         icon: 'timeline',
         configHelpLinkId: 'widgetsConfigTimeseries',
         template: {
-          bundleAlias: 'charts',
-          alias: 'basic_timeseries'
+          fullFqn: 'system.charts.basic_timeseries'
         }
       }
     ],
@@ -77,8 +82,7 @@ export const widgetTypesData = new Map<widgetType, WidgetTypeData>(
         icon: 'track_changes',
         configHelpLinkId: 'widgetsConfigLatest',
         template: {
-          bundleAlias: 'cards',
-          alias: 'attributes_card'
+          fullFqn: 'system.cards.attributes_card'
         }
       }
     ],
@@ -88,10 +92,8 @@ export const widgetTypesData = new Map<widgetType, WidgetTypeData>(
         name: 'widget.rpc',
         icon: 'mdi:developer-board',
         configHelpLinkId: 'widgetsConfigRpc',
-        isMdiIcon: true,
         template: {
-          bundleAlias: 'gpio_widgets',
-          alias: 'basic_gpio_control'
+          fullFqn: 'system.gpio_widgets.basic_gpio_control'
         }
       }
     ],
@@ -102,8 +104,7 @@ export const widgetTypesData = new Map<widgetType, WidgetTypeData>(
         icon: 'error',
         configHelpLinkId: 'widgetsConfigAlarm',
         template: {
-          bundleAlias: 'alarm_widgets',
-          alias: 'alarms_table'
+          fullFqn: 'system.alarm_widgets.alarms_table'
         }
       }
     ],
@@ -114,8 +115,7 @@ export const widgetTypesData = new Map<widgetType, WidgetTypeData>(
         icon: 'font_download',
         configHelpLinkId: 'widgetsConfigStatic',
         template: {
-          bundleAlias: 'cards',
-          alias: 'html_card'
+          fullFqn: 'system.cards.html_card'
         }
       }
     ]
@@ -156,6 +156,8 @@ export interface WidgetTypeDescriptor {
   settingsDirective?: string;
   dataKeySettingsDirective?: string;
   latestDataKeySettingsDirective?: string;
+  hasBasicMode?: boolean;
+  basicModeDirective?: string;
   defaultConfig: string;
   sizeX: number;
   sizeY: number;
@@ -174,6 +176,12 @@ export interface WidgetTypeParameters {
   warnOnPageDataOverflow?: boolean;
   ignoreDataUpdateOnIntervalTick?: boolean;
   processNoDataByWidget?: boolean;
+  previewWidth?: string;
+  previewHeight?: string;
+  embedTitlePanel?: boolean;
+  hideDataSettings?: boolean;
+  defaultDataKeysFunction?: (configComponent: any, configData: any) => DataKey[];
+  defaultLatestDataKeysFunction?: (configComponent: any, configData: any) => DataKey[];
 }
 
 export interface WidgetControllerDescriptor {
@@ -187,10 +195,37 @@ export interface WidgetControllerDescriptor {
 
 export interface BaseWidgetType extends BaseData<WidgetTypeId> {
   tenantId: TenantId;
-  bundleAlias: string;
-  alias: string;
+  fqn: string;
   name: string;
+  deprecated: boolean;
 }
+
+export const fullWidgetTypeFqn = (type: BaseWidgetType): string =>
+  ((!type.tenantId || type.tenantId?.id === NULL_UUID) ? 'system' : 'tenant') + '.' + type.fqn;
+
+export const widgetTypeFqn = (fullFqn: string): string => {
+  if (isNotEmptyStr(fullFqn)) {
+    const parts = fullFqn.split('.');
+    if (parts.length > 1) {
+      const scopeQualifier = parts[0];
+      if (['system', 'tenant'].includes(scopeQualifier)) {
+        return fullFqn.substring(scopeQualifier.length + 1);
+      }
+    }
+  }
+  return fullFqn;
+};
+
+export const isValidWidgetFullFqn = (fullFqn: string): boolean => {
+  if (isNotEmptyStr(fullFqn)) {
+    const parts = fullFqn.split('.');
+    if (parts.length > 1) {
+      const scopeQualifier = parts[0];
+      return ['system', 'tenant'].includes(scopeQualifier);
+    }
+  }
+  return false;
+};
 
 export interface WidgetType extends BaseWidgetType {
   descriptor: WidgetTypeDescriptor;
@@ -199,12 +234,20 @@ export interface WidgetType extends BaseWidgetType {
 export interface WidgetTypeInfo extends BaseWidgetType {
   image: string;
   description: string;
+  tags: string[];
   widgetType: widgetType;
 }
 
-export interface WidgetTypeDetails extends WidgetType {
+export interface WidgetTypeDetails extends WidgetType, ExportableEntity<WidgetTypeId> {
   image: string;
   description: string;
+  tags: string[];
+}
+
+export enum DeprecatedFilter {
+  ALL = 'ALL',
+  ACTUAL = 'ACTUAL',
+  DEPRECATED = 'DEPRECATED'
 }
 
 export enum LegendDirection {
@@ -226,6 +269,8 @@ export enum LegendPosition {
   right = 'right'
 }
 
+export const legendPositions = Object.keys(LegendPosition) as LegendPosition[];
+
 export const legendPositionTranslationMap = new Map<LegendPosition, string>(
   [
     [ LegendPosition.top, 'position.top' ],
@@ -246,18 +291,16 @@ export interface LegendConfig {
   showLatest: boolean;
 }
 
-export function defaultLegendConfig(wType: widgetType): LegendConfig {
-  return {
-    direction: LegendDirection.column,
-    position: LegendPosition.bottom,
-    sortDataKeys: false,
-    showMin: false,
-    showMax: false,
-    showAvg: wType === widgetType.timeseries,
-    showTotal: false,
-    showLatest: false
-  };
-}
+export const defaultLegendConfig = (wType: widgetType): LegendConfig => ({
+  direction: LegendDirection.column,
+  position: LegendPosition.bottom,
+  sortDataKeys: false,
+  showMin: false,
+  showMax: false,
+  showAvg: wType === widgetType.timeseries,
+  showTotal: false,
+  showLatest: false
+});
 
 export enum ComparisonResultType {
   PREVIOUS_VALUE = 'PREVIOUS_VALUE',
@@ -312,17 +355,26 @@ export interface DataKey extends KeyInfo {
   _hash?: number;
 }
 
+export enum DataKeyConfigMode {
+  general = 'general',
+  advanced = 'advanced'
+}
+
 export enum DatasourceType {
   function = 'function',
+  device = 'device',
   entity = 'entity',
-  entityCount = 'entityCount'
+  entityCount = 'entityCount',
+  alarmCount = 'alarmCount'
 }
 
 export const datasourceTypeTranslationMap = new Map<DatasourceType, string>(
   [
     [ DatasourceType.function, 'function.function' ],
+    [ DatasourceType.device, 'device.device' ],
     [ DatasourceType.entity, 'entity.entity' ],
-    [ DatasourceType.entityCount, 'entity.entities-count' ]
+    [ DatasourceType.entityCount, 'entity.entities-count' ],
+    [ DatasourceType.alarmCount, 'entity.alarms-count' ]
   ]
 );
 
@@ -335,6 +387,7 @@ export interface Datasource {
   entityType?: EntityType;
   entityId?: string;
   entityName?: string;
+  deviceId?: string;
   entityAliasId?: string;
   filterId?: string;
   unresolvedStateEntity?: boolean;
@@ -348,16 +401,18 @@ export interface Datasource {
   pageLink?: EntityDataPageLink;
   keyFilters?: Array<KeyFilter>;
   entityFilter?: EntityFilter;
+  alarmFilterConfig?: AlarmFilterConfig;
+  alarmFilter?: AlarmFilter;
   dataKeyStartIndex?: number;
   latestDataKeyStartIndex?: number;
   [key: string]: any;
 }
 
-export function datasourcesHasAggregation(datasources?: Array<Datasource>): boolean {
+export const datasourcesHasAggregation = (datasources?: Array<Datasource>): boolean => {
   if (datasources) {
     const foundDatasource = datasources.find(datasource => {
-      const found = datasource.dataKeys && datasource.dataKeys.find(key => key.type === DataKeyType.timeseries &&
-        key.aggregationType && key.aggregationType !== AggregationType.NONE);
+      const found = datasource.dataKeys && datasource.dataKeys.find(key => key?.type === DataKeyType.timeseries &&
+        key?.aggregationType && key.aggregationType !== AggregationType.NONE);
       return !!found;
     });
     if (foundDatasource) {
@@ -365,16 +420,16 @@ export function datasourcesHasAggregation(datasources?: Array<Datasource>): bool
     }
   }
   return false;
-}
+};
 
-export function datasourcesHasOnlyComparisonAggregation(datasources?: Array<Datasource>): boolean {
+export const datasourcesHasOnlyComparisonAggregation = (datasources?: Array<Datasource>): boolean => {
   if (!datasourcesHasAggregation(datasources)) {
     return false;
   }
   if (datasources) {
     const foundDatasource = datasources.find(datasource => {
-      const found = datasource.dataKeys && datasource.dataKeys.find(key => key.type === DataKeyType.timeseries &&
-        key.aggregationType && key.aggregationType !== AggregationType.NONE && !key.comparisonEnabled);
+      const found = datasource.dataKeys && datasource.dataKeys.find(key => key?.type === DataKeyType.timeseries &&
+        key?.aggregationType && key.aggregationType !== AggregationType.NONE && !key.comparisonEnabled);
       return !!found;
     });
     if (foundDatasource) {
@@ -382,7 +437,7 @@ export function datasourcesHasOnlyComparisonAggregation(datasources?: Array<Data
     }
   }
   return true;
-}
+};
 
 export interface FormattedData {
   $datasource: Datasource;
@@ -550,6 +605,7 @@ export interface CustomActionDescriptor {
   customResources?: Array<WidgetResource>;
   customHtml?: string;
   customCss?: string;
+  customModules?: Type<any>[];
 }
 
 export interface WidgetActionDescriptor extends CustomActionDescriptor {
@@ -591,8 +647,16 @@ export interface WidgetSettings {
   [key: string]: any;
 }
 
+export enum WidgetConfigMode {
+  basic = 'basic',
+  advanced = 'advanced'
+}
+
 export interface WidgetConfig {
+  configMode?: WidgetConfigMode;
   title?: string;
+  titleFont?: Font;
+  titleColor?: string;
   titleIcon?: string;
   showTitle?: boolean;
   showTitleIcon?: boolean;
@@ -603,9 +667,9 @@ export interface WidgetConfig {
   enableFullscreen?: boolean;
   useDashboardTimewindow?: boolean;
   displayTimewindow?: boolean;
-  showLegend?: boolean;
-  legendConfig?: LegendConfig;
   timewindow?: Timewindow;
+  timewindowStyle?: TimewindowStyle;
+  desktopHide?: boolean;
   mobileHide?: boolean;
   mobileHeight?: number;
   mobileOrder?: number;
@@ -613,9 +677,10 @@ export interface WidgetConfig {
   backgroundColor?: string;
   padding?: string;
   margin?: string;
-  widgetStyle?: {[klass: string]: any};
+  borderRadius?: string;
+  widgetStyle?: ComponentStyle;
   widgetCss?: string;
-  titleStyle?: {[klass: string]: any};
+  titleStyle?: ComponentStyle;
   units?: string;
   decimals?: number;
   noDataDisplayMessage?: string;
@@ -623,16 +688,19 @@ export interface WidgetConfig {
   actions?: {[actionSourceId: string]: Array<WidgetActionDescriptor>};
   settings?: WidgetSettings;
   alarmSource?: Datasource;
-  alarmStatusList?: AlarmSearchStatus[];
-  alarmSeverityList?: AlarmSeverity[];
-  alarmTypeList?: string[];
-  searchPropagatedAlarms?: boolean;
+  alarmFilterConfig?: AlarmFilterConfig;
   datasources?: Array<Datasource>;
   targetDeviceAliasIds?: Array<string>;
   [key: string]: any;
 }
 
-export interface Widget extends WidgetInfo{
+export interface BaseWidgetInfo {
+  id?: string;
+  typeFullFqn: string;
+  type: widgetType;
+}
+
+export interface Widget extends BaseWidgetInfo {
   typeId?: WidgetTypeId;
   sizeX: number;
   sizeY: number;
@@ -641,15 +709,11 @@ export interface Widget extends WidgetInfo{
   config: WidgetConfig;
 }
 
-export interface WidgetInfo {
-  id?: string;
-  isSystemType: boolean;
-  bundleAlias: string;
-  typeAlias: string;
-  type: widgetType;
+export interface WidgetInfo extends BaseWidgetInfo {
   title: string;
   image?: string;
   description?: string;
+  deprecated?: boolean;
 }
 
 export interface GroupInfo {
@@ -684,28 +748,16 @@ export interface IWidgetSettingsComponent {
   aliasController: IAliasController;
   dashboard: Dashboard;
   widget: Widget;
+  widgetConfig: WidgetConfigComponentData;
   functionScopeVariables: string[];
   settings: WidgetSettings;
   settingsChanged: Observable<WidgetSettings>;
-  validate();
+  validateSettings(): boolean;
   [key: string]: any;
 }
 
-function removeEmptyWidgetSettings(settings: WidgetSettings): WidgetSettings {
-  if (settings) {
-    const keys = Object.keys(settings);
-    for (const key of keys) {
-      const val = settings[key];
-      if (val === null || isEmptyStr(val)) {
-        delete settings[key];
-      }
-    }
-  }
-  return settings;
-}
-
 @Directive()
-// tslint:disable-next-line:directive-class-suffix
+// eslint-disable-next-line @angular-eslint/directive-class-suffix
 export abstract class WidgetSettingsComponent extends PageComponent implements
   IWidgetSettingsComponent, OnInit, AfterViewInit {
 
@@ -714,6 +766,17 @@ export abstract class WidgetSettingsComponent extends PageComponent implements
   dashboard: Dashboard;
 
   widget: Widget;
+
+  widgetConfigValue: WidgetConfigComponentData;
+
+  set widgetConfig(value: WidgetConfigComponentData) {
+    this.widgetConfigValue = value;
+    this.onWidgetConfigSet(value);
+  }
+
+  get widgetConfig(): WidgetConfigComponentData {
+    return this.widgetConfigValue;
+  }
 
   functionScopeVariables: string[];
 
@@ -749,15 +812,15 @@ export abstract class WidgetSettingsComponent extends PageComponent implements
   ngOnInit() {}
 
   ngAfterViewInit(): void {
-    setTimeout(() => {
-      if (!this.validateSettings()) {
-        this.settingsChangedEmitter.emit(null);
-      }
-    }, 0);
+    if (!this.validateSettings()) {
+      setTimeout(() => {
+        this.onSettingsChanged(this.prepareOutputSettings(this.settingsForm().getRawValue()));
+      }, 0);
+    }
   }
 
-  validate() {
-    this.onValidate();
+  public validateSettings(): boolean {
+    return this.settingsForm().valid;
   }
 
   protected setupSettings(settings: WidgetSettings) {
@@ -773,8 +836,8 @@ export abstract class WidgetSettingsComponent extends PageComponent implements
         this.updateValidators(true, trigger);
       });
     }
-    this.settingsForm().valueChanges.subscribe((updated: any) => {
-      this.onSettingsChanged(this.prepareOutputSettings(updated));
+    this.settingsForm().valueChanges.subscribe(() => {
+      this.onSettingsChanged(this.prepareOutputSettings(this.settingsForm().getRawValue()));
     });
   }
 
@@ -793,15 +856,11 @@ export abstract class WidgetSettingsComponent extends PageComponent implements
   }
 
   protected onSettingsChanged(updated: WidgetSettings) {
-    this.settingsValue = removeEmptyWidgetSettings(updated);
-    if (this.validateSettings()) {
-      this.settingsChangedEmitter.emit(this.settingsValue);
-    } else {
-      this.settingsChangedEmitter.emit(null);
-    }
+    this.settingsValue = updated;
+    this.settingsChangedEmitter.emit(this.settingsValue);
   }
 
-  protected doUpdateSettings(settingsForm: FormGroup, settings: WidgetSettings) {
+  protected doUpdateSettings(settingsForm: UntypedFormGroup, settings: WidgetSettings) {
   }
 
   protected prepareInputSettings(settings: WidgetSettings): WidgetSettings {
@@ -812,18 +871,15 @@ export abstract class WidgetSettingsComponent extends PageComponent implements
     return settings;
   }
 
-  protected validateSettings(): boolean {
-    return this.settingsForm().valid;
-  }
-
-  protected onValidate() {}
-
-  protected abstract settingsForm(): FormGroup;
+  protected abstract settingsForm(): UntypedFormGroup;
 
   protected abstract onSettingsSet(settings: WidgetSettings);
 
   protected defaultSettings(): WidgetSettings {
     return {};
+  }
+
+  protected onWidgetConfigSet(widgetConfig: WidgetConfigComponentData) {
   }
 
 }

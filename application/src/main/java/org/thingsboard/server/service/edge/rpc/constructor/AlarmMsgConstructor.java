@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2022 The Thingsboard Authors
+ * Copyright © 2016-2023 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,9 @@
  */
 package org.thingsboard.server.service.edge.rpc.constructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.thingsboard.server.common.data.alarm.Alarm;
-import org.thingsboard.server.common.data.id.AssetId;
-import org.thingsboard.server.common.data.id.DeviceId;
-import org.thingsboard.server.common.data.id.EntityViewId;
-import org.thingsboard.server.common.data.id.TenantId;
-import org.thingsboard.server.dao.asset.AssetService;
-import org.thingsboard.server.dao.device.DeviceService;
-import org.thingsboard.server.dao.entityview.EntityViewService;
 import org.thingsboard.common.util.JacksonUtil;
+import org.thingsboard.server.common.data.alarm.Alarm;
 import org.thingsboard.server.gen.edge.v1.AlarmUpdateMsg;
 import org.thingsboard.server.gen.edge.v1.UpdateMsgType;
 import org.thingsboard.server.queue.util.TbCoreComponent;
@@ -34,28 +26,7 @@ import org.thingsboard.server.queue.util.TbCoreComponent;
 @TbCoreComponent
 public class AlarmMsgConstructor {
 
-    @Autowired
-    private DeviceService deviceService;
-
-    @Autowired
-    private AssetService assetService;
-
-    @Autowired
-    private EntityViewService entityViewService;
-
-    public AlarmUpdateMsg constructAlarmUpdatedMsg(TenantId tenantId, UpdateMsgType msgType, Alarm alarm) {
-        String entityName = null;
-        switch (alarm.getOriginator().getEntityType()) {
-            case DEVICE:
-                entityName = deviceService.findDeviceById(tenantId, new DeviceId(alarm.getOriginator().getId())).getName();
-                break;
-            case ASSET:
-                entityName = assetService.findAssetById(tenantId, new AssetId(alarm.getOriginator().getId())).getName();
-                break;
-            case ENTITY_VIEW:
-                entityName = entityViewService.findEntityViewById(tenantId, new EntityViewId(alarm.getOriginator().getId())).getName();
-                break;
-        }
+    public AlarmUpdateMsg constructAlarmUpdatedMsg(UpdateMsgType msgType, Alarm alarm, String entityName) {
         AlarmUpdateMsg.Builder builder = AlarmUpdateMsg.newBuilder()
                 .setMsgType(msgType)
                 .setIdMSB(alarm.getId().getId().getMostSignificantBits())
