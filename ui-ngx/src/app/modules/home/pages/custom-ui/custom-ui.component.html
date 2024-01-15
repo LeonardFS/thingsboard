@@ -38,12 +38,6 @@
           <tb-image-input [label]="'Logo'" [required]='false' [maxKBytes]='logoMaxKBytes' [inputId]="'logoSelect'" formControlName="logoImageUrl"></tb-image-input>
           <div class="tb-hint ng-star-inserted">Any image with maximum size {{logoMaxKBytes}} KBytes.</div>
         </div>
-        <!--输入框样式Logo高度设置-->
-<!--        <mat-form-field fxFill>-->
-<!--          <mat-label>{{ 'platform.logoHeight' | translate }},px</mat-label>-->
-<!--          <input matInput type="number" formControlName="logoImageHeight" step="1" min='1'>-->
-<!--        </mat-form-field>-->
-        <!--滑块样式Logo高度设置-->
         <div fxLayout='column'>
           <mat-label>{{ 'platform.logoHeight' | translate }}</mat-label>
           <mat-slider formControlName="logoImageHeight" thumbLabel [displayWith]="formatSlider" tickInterval="1000" min="1" max="100"></mat-slider>
@@ -60,6 +54,12 @@
                           icon="text_format"
                           openOnInput
                           formControlName="platformTextMainColor">
+          </tb-color-input>
+          <tb-color-input fxFlex
+          label="{{'platform.main-color-icons' | translate}}"
+          icon="text_format"
+          openOnInput
+          formControlName="iconsColor">
           </tb-color-input>
         </div>
         <tb-color-input fxFlex
@@ -82,8 +82,6 @@
                           formControlName="platformMenuColorHover">
           </tb-color-input>
         </div>
-<!--        高级CSS先不做,意义不大-->
-<!--        <button style="margin-bottom: 1rem" mat-raised-button color="primary" (click)='advancedCssClick()'>{{ 'platform.advancedCss' | translate }}</button>-->
         <mat-checkbox style='display: block; padding-bottom: 1rem;' formControlName="showNameVersion" color='primary'>{{ 'platform.showNameVersion' | translate }}</mat-checkbox>
         <mat-form-field fxFill *ngIf="customUiFormGroup.get('showNameVersion').value">
           <mat-label>{{ 'platform.name' | translate }}</mat-label>
@@ -93,6 +91,11 @@
           <mat-label>{{ 'platform.version' | translate }}</mat-label>
           <input matInput type="text" formControlName="platformVersion">
         </mat-form-field>
+      <div>
+        <tb-css formControlName="customCss"
+            label="Custom Css">
+        </tb-css>
+      </div>
         <div fxLayout='row' fxLayoutAlign='end center' fxLayoutGap='16px'>
           <button mat-raised-button (click)='reset($event)' [disabled]='(isLoading$ | async)'>{{ 'action.reset' | translate }}</button>
           <button mat-raised-button (click)='cancel($event)' [disabled]='(isLoading$ | async)'>{{ 'action.cancel' | translate }}</button>

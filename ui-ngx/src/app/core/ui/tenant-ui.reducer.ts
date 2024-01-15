@@ -29,6 +29,8 @@ export const initialState: TenantUIState = {
   platformMenuColorActive: null,
   platformMenuColorHover: null,
   platformButtonColor: null,
+  iconsColor: null,
+  customCss: null,
   showNameVersion: false,
   platformName: env.appTitle,
   platformVersion: env.tbVersion

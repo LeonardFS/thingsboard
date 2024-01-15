@@ -110,6 +110,11 @@ export class LoginComponent extends PageComponent implements OnInit {
                 this.store.dispatch(new ActionTenantUIChangeAll(ui));
               });
             }
+            if(data.authUser.authority === Authority.CUSTOMER_USER){
+              this.dashboardService.getTenantUIInfo().subscribe(ui => {
+                this.store.dispatch(new ActionTenantUIChangeAll(ui));
+              });
+            }
           });
         },
         (error: HttpErrorResponse) => {

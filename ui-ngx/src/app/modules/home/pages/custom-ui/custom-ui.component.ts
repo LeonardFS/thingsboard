@@ -27,6 +27,7 @@ import { HasDirtyFlag } from '@core/guards/confirm-on-exit.guard';
 import { TenantUIState } from '@core/ui/tenant-ui.models';
 import { PageComponent } from '@shared/components/page.component';
 import { initialState } from '@core/ui/tenant-ui.reducer';
+import { isDefined } from '@app/core/utils';
 
 @Component({
   selector: 'tb-custom-ui',
@@ -92,9 +93,10 @@ export class CustomUiComponent extends PageComponent implements OnInit, HasDirty
     this.customUiFormGroup.get('showNameVersion').patchValue(ui.showNameVersion);
     this.customUiFormGroup.get('platformName').patchValue(ui.platformName);
     this.customUiFormGroup.get('platformVersion').patchValue(ui.platformVersion);
+    this.customUiFormGroup.get('iconsColor').patchValue(ui.iconsColor);
+    this.customUiFormGroup.get('customCss').patchValue(ui.customCss);
   }
 
-  //恢复到tb原始设置
   reset($event: Event) {
     if ($event) {
       $event.stopPropagation();
@@ -103,7 +105,7 @@ export class CustomUiComponent extends PageComponent implements OnInit, HasDirty
     this.store.dispatch(new ActionTenantUIChangeAll(this.customUiFormGroup.value));
     this.isDirty = true;
   }
-  //撤销本次操作
+
   cancel($event: Event) {
     if ($event) {
       $event.stopPropagation();
@@ -111,7 +113,6 @@ export class CustomUiComponent extends PageComponent implements OnInit, HasDirty
     this.writeFormByHttp();
   }
 
-  //初始化表单
   initForm() {
     this.customUiFormGroup = this.fb.group({
       applicationTitle: [null, []],
@@ -125,7 +126,9 @@ export class CustomUiComponent extends PageComponent implements OnInit, HasDirty
       platformMenuColorHover: [null, []],
       showNameVersion: [false, []],
       platformName: [env.appTitle, []],
-      platformVersion: [env.tbVersion, []]
+      platformVersion: [env.tbVersion, []],
+      iconsColor: [null, []],
+      customCss: ['', []]
     });
     this.initData = this.customUiFormGroup.value;
     this.previousData = this.customUiFormGroup.value;
@@ -145,7 +148,4 @@ export class CustomUiComponent extends PageComponent implements OnInit, HasDirty
     return value + 'px';
   }
 
-  // advancedCssClick() {
-  //
-  // }
 }

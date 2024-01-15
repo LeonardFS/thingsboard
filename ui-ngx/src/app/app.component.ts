@@ -39,7 +39,6 @@ import { TitleService } from '@core/services/title.service';
 import { Router } from '@angular/router';
 import { TenantUIState } from '@core/ui/tenant-ui.models';
 import { Authority } from '@shared/models/authority.enum';
-//getCurrentAuthUser依赖是新增,其他俩个是原有的
 import { getCurrentAuthUser, selectIsAuthenticated, selectIsUserLoaded } from '@core/auth/auth.selectors';
 
 
@@ -117,7 +116,6 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit() {
-     //订阅ui状态更改
      this.store.pipe(select(selectTenantUI)).subscribe(ui => {
       this.changeCss(ui);
       if (ui) {
@@ -125,7 +123,6 @@ export class AppComponent implements OnInit {
         this.changeTitle(ui.applicationTitle);
       }
     });
-    //初始化ui信息
     this.store.pipe(select(selectIsAuthenticated)).subscribe( isAuthed => {
       if(isAuthed){
         if(getCurrentAuthUser(this.store).authority === Authority.TENANT_ADMIN){
@@ -153,9 +150,11 @@ export class AppComponent implements OnInit {
 
   changeCss(ui: TenantUIState) {
     let css = '.tb-default .mat-toolbar.mat-primary{';
+    let pureCss = '';
+    let customCss ='';
     const cssParser = new cssjs();
     cssParser.testMode = false;
-    const namespace = 'global-ui-css-' + hashCode(css);
+    let namespace = 'global-ui-css-' + hashCode(css);
     cssParser.cssPreviewNamespace = namespace;
     if (ui.platformMainColor) {
       css = css + 'background-color: ' + ui.platformMainColor + ' !important;';
@@ -164,6 +163,7 @@ export class AppComponent implements OnInit {
       css = css + 'color: ' + ui.platformTextMainColor + ' !important;';
     }
     css = css + '}';
+
     if (ui.platformButtonColor) {
       css = css + '.tb-default .mat-raised-button.mat-primary{background-color: ' + ui.platformButtonColor + ' !important;}';
     }
@@ -173,7 +173,30 @@ export class AppComponent implements OnInit {
     if (ui.platformMenuColorHover) {
       css = css + '.tb-default li.ng-star-inserted .mat-button:hover {background-color: ' + ui.platformMenuColorHover + ';}';
     }
-    cssParser.createStyleElement(namespace, css, 'nonamespace');
+    if (ui.iconsColor)
+    {
+      pureCss = pureCss + ' .tb-default .mat-icon {color: ' + ui.iconsColor + ';}';
+    }
+    if (ui.iconsColor)
+    {
+      pureCss = pureCss + ' .tb-dark .mat-icon {color: ' + ui.iconsColor + ';}';
+    }
+
+    if(ui.customCss)
+    {
+      customCss =css + ' ' + ui.customCss;
+      namespace = 'global-ui-css-' + hashCode(customCss);
+      console.log('changing css to custom ' + customCss)
+      cssParser.createStyleElement(namespace, customCss, 'nonamespace');
+    }
+    else
+    {
+      css = css + pureCss;
+      console.log('changing css to ' + css)
+      cssParser.createStyleElement(namespace, css, 'nonamespace');
+    }
+
+
   }
 
   changeTitle(title: string) {
@@ -188,7 +211,6 @@ export class AppComponent implements OnInit {
     );
   }
 
-  //改变应用图标
   changeIcon(icon: string) {
     const __el = document.getElementById('custom-icon');
     if (__el) {

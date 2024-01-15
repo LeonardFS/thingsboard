@@ -54,14 +54,15 @@
               matTooltipPosition="above">
         <tb-icon>{{ action.icon }}</tb-icon>
       </button>
-<button mat-icon-button
+    </div>
+      <button mat-icon-button
         [matMenuTriggerFor]="menu"
         #menuTrigger="matMenuTrigger"
         [fxShow]="!isEdit && widget.enableDataExport"
         matTooltip="{{ 'widget.data-export' | translate }}"
         matTooltipPosition="above">
         <mat-icon>{{'archive'}}</mat-icon>
-        </button>
+      </button>
         <mat-menu #menu="matMenu">
           <button mat-menu-item (click)="exportData($event, widgetComponent.widgetContext,'csv');menuTrigger.toggleMenu();">
             <mat-icon>insert_drive_file</mat-icon>
@@ -105,7 +106,7 @@
               matTooltipPosition="above">
         <tb-icon>close</tb-icon>
       </button>
-    </div>
+
   </div>
   <div class="tb-widget-content" [ngClass]="{'tb-no-interaction': disableWidgetInteraction}">
     <tb-widget #widgetComponent

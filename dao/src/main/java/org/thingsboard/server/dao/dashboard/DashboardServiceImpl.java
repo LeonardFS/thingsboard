@@ -407,6 +407,8 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
         checkAndPutAdditionalInfo(additionalInfo, "platformTextMainColor", params);
         checkAndPutAdditionalInfo(additionalInfo, "platformMenuColorActive", params);
         checkAndPutAdditionalInfo(additionalInfo, "platformMenuColorHover", params);
+        checkAndPutAdditionalInfo(additionalInfo, "iconsColor", params);
+        checkAndPutAdditionalInfo(additionalInfo,"customCss", params);
         try {
             tenant.setAdditionalInfo(new ObjectMapper().readValue(additionalInfo.toString(), JsonNode.class));
             jpaTenantDao.save(tenantId, tenant);
@@ -441,6 +443,8 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
         String logoImageUrl = additionalInfo.get("logoImageUrl") != null ? additionalInfo.get("logoImageUrl").asText() : null;
         String logoImageHeight = additionalInfo.get("logoImageHeight") != null ? additionalInfo.get("logoImageHeight").asText() : null;
         String platformMainColor = additionalInfo.get("platformMainColor") != null ? additionalInfo.get("platformMainColor").asText() : null;
+        String iconsColor = additionalInfo.get("iconsColor") != null ? additionalInfo.get("iconsColor").asText() : null;
+        String customCss = additionalInfo.get("customCss") != null ? additionalInfo.get("customCss").asText() : null;
         String platformTextMainColor = additionalInfo.get("platformTextMainColor") != null ? additionalInfo.get("platformTextMainColor").asText() : null;
         String platformButtonColor = additionalInfo.get("platformButtonColor") != null ? additionalInfo.get("platformButtonColor").asText() : null;
         String platformMenuColorActive = additionalInfo.get("platformMenuColorActive") != null ? additionalInfo.get("platformMenuColorActive").asText() : null;
@@ -460,6 +464,8 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
         map.put("showNameVersion", showNameVersion);
         map.put("platformName", platformName);
         map.put("platformVersion", platformVersion);
+        map.put("iconsColor", iconsColor);
+        map.put("customCss", customCss);
         return map;
     }
 

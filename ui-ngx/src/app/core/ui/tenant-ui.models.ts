@@ -27,6 +27,8 @@ export interface TenantUIState {
   showNameVersion: boolean;
   platformName?: string;
   platformVersion?: string;
+  iconsColor?: string;
+  customCss?: string;
 }
 
 export interface LoginUIState{

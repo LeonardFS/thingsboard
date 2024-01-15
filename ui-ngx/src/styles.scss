@@ -633,9 +633,10 @@ mat-icon {
   // Material table
 
   .mat-toolbar.mat-primary {
+    color: black;
     button.mat-mdc-icon-button {
       .mat-icon {
-        color: white;
+        color: rgb(0, 0, 0);
       }
     }
     .mat-mdc-select-value, .mat-mdc-select-arrow, .mat-mdc-select-arrow:after {
@@ -889,6 +890,7 @@ mat-icon {
   }
 
   .mat-icon {
+    color: black;
     svg {
       vertical-align: inherit;
     }
