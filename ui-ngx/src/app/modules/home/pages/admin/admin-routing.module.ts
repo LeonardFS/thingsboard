@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2023 The Thingsboard Authors
+/// Copyright © 2016-2024 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import { RouterTabsComponent } from '@home/components/router-tabs.component';
 import { auditLogsRoutes } from '@home/pages/audit-log/audit-log-routing.module';
 import { CustomUiComponent } from '../custom-ui/custom-ui.component';
 import { LoginUiComponent } from '../login-ui/login-ui.component';
+import { ImageGalleryComponent } from '@shared/components/image/image-gallery.component';
 
 @Injectable()
 export class OAuth2LoginProcessingUrlResolver implements Resolve<string> {
@@ -73,6 +74,25 @@ const routes: Routes = [
         }
       },
       ...widgetsLibraryRoutes,
+      {
+        path: 'images',
+        data: {
+          breadcrumb: {
+            label: 'image.gallery',
+            icon: 'filter'
+          }
+        },
+        children: [
+          {
+            path: '',
+            component: ImageGalleryComponent,
+            data: {
+              auth: [Authority.TENANT_ADMIN, Authority.SYS_ADMIN],
+              title: 'image.gallery',
+            },
+          }
+        ]
+      },
       {
         path: 'resources-library',
         data: {

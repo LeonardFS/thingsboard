@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2023 The Thingsboard Authors
+/// Copyright © 2016-2024 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -15,13 +15,17 @@
 ///
 
 import { isDefinedAndNotNull, isNumber, isNumeric, isUndefinedOrNull, parseFunction } from '@core/utils';
-import { DataKey, Datasource, DatasourceData } from '@shared/models/widget.models';
+import { DataEntry, DataKey, Datasource, DatasourceData } from '@shared/models/widget.models';
 import { Injector } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { DateAgoPipe } from '@shared/pipe/date-ago.pipe';
 import { TranslateService } from '@ngx-translate/core';
 import { AlarmFilterConfig } from '@shared/models/query/query.models';
 import { AlarmSearchStatus } from '@shared/models/alarm.models';
+import { Observable, of } from 'rxjs';
+import { ImagePipe } from '@shared/pipe/image.pipe';
+import { map } from 'rxjs/operators';
+import { DomSanitizer } from '@angular/platform-browser';
 
 export type ComponentStyle = {[klass: string]: any};
 
@@ -200,7 +204,7 @@ export const cssSizeToStrSize = (size?: number, unit?: cssUnit): string => (isDe
 
 export const resolveCssSize = (strSize?: string): [number, cssUnit] => {
   if (!strSize || !strSize.trim().length) {
-    return [0, 'px'];
+    return [null, 'px'];
   }
   let resolvedUnit: cssUnit;
   let resolvedSize = strSize;
@@ -214,7 +218,7 @@ export const resolveCssSize = (strSize?: string): [number, cssUnit] => {
     resolvedSize = strSize.substring(0, strSize.length - resolvedUnit.length);
   }
   resolvedUnit = resolvedUnit || 'px';
-  let numericSize = 0;
+  let numericSize: number = null;
   if (isNumeric(resolvedSize)) {
     numericSize = Number(resolvedSize);
   }
@@ -328,7 +332,7 @@ export const customDateFormat = (format: string): DateFormatSettings => ({
 });
 
 export const dateFormats = ['MMM dd yyyy HH:mm', 'dd MMM yyyy HH:mm', 'yyyy MMM dd HH:mm',
-  'MM/dd/yyyy HH:mm', 'dd/MM/yyyy HH:mm', 'yyyy/MM/dd HH:mm:ss']
+  'MM/dd/yyyy HH:mm', 'dd/MM/yyyy HH:mm', 'yyyy/MM/dd HH:mm:ss', 'yyyy-MM-dd HH:mm:ss', 'yyyy-MM-dd HH:mm:ss.SSS']
   .map(f => simpleDateFormat(f)).concat([lastUpdateAgoDateFormat(), customDateFormat('EEE, MMMM dd, yyyy')]);
 
 export const compareDateFormats = (df1: DateFormatSettings, df2: DateFormatSettings): boolean => {
@@ -362,7 +366,7 @@ export abstract class DateFormatProcessor {
                         protected settings: DateFormatSettings) {
   }
 
-  abstract update(ts: string | number | Date): void;
+  abstract update(ts: string | number | Date): string;
 
 }
 
@@ -376,12 +380,13 @@ export class SimpleDateFormatProcessor extends DateFormatProcessor {
     this.datePipe = $injector.get(DatePipe);
   }
 
-  update(ts: string| number | Date): void {
+  update(ts: string| number | Date): string {
     if (ts) {
       this.formatted = this.datePipe.transform(ts, this.settings.format);
     } else {
       this.formatted = '&nbsp;';
     }
+    return this.formatted;
   }
 
 }
@@ -398,7 +403,7 @@ export class LastUpdateAgoDateFormatProcessor extends DateFormatProcessor {
     this.translate = $injector.get(TranslateService);
   }
 
-  update(ts: string| number | Date): void {
+  update(ts: string| number | Date): string {
     if (ts) {
       const agoText = this.dateAgoPipe.transform(ts, {applyAgo: true, short: true, textPart: true});
       if (this.settings.hideLastUpdatePrefix) {
@@ -410,20 +415,19 @@ export class LastUpdateAgoDateFormatProcessor extends DateFormatProcessor {
     } else {
       this.formatted = '&nbsp;';
     }
+    return this.formatted;
   }
 
 }
 
 export enum BackgroundType {
   image = 'image',
-  imageUrl = 'imageUrl',
   color = 'color'
 }
 
 export const backgroundTypeTranslations = new Map<BackgroundType, string>(
   [
     [BackgroundType.image, 'widgets.background.background-type-image'],
-    [BackgroundType.imageUrl, 'widgets.background.background-type-image-url'],
     [BackgroundType.color, 'widgets.background.background-type-color']
   ]
 );
@@ -436,7 +440,6 @@ export interface OverlaySettings {
 
 export interface BackgroundSettings {
   type: BackgroundType;
-  imageBase64?: string;
   imageUrl?: string;
   color?: string;
   overlay: OverlaySettings;
@@ -507,19 +510,36 @@ export const isFontSet = (font: Font): boolean => (!!font && !!font.style && !!f
 
 export const isFontPartiallySet = (font: Font): boolean => (!!font && (!!font.style || !!font.weight || !!font.size || !!font.family));
 
-export const backgroundStyle = (background: BackgroundSettings): ComponentStyle => {
+export const validateAndUpdateBackgroundSettings = (background: BackgroundSettings): BackgroundSettings => {
+  if (background) {
+    if (background.type === BackgroundType.image && (background as any).imageBase64) {
+      background.imageUrl = (background as any).imageBase64;
+    }
+    if (background.type === 'imageUrl' as any) {
+      background.type = BackgroundType.image;
+    }
+    delete (background as any).imageBase64;
+  }
+  return background;
+};
+
+export const backgroundStyle = (background: BackgroundSettings, imagePipe: ImagePipe,
+                                sanitizer: DomSanitizer, preview = false): Observable<ComponentStyle> => {
+  background = validateAndUpdateBackgroundSettings(background);
   if (background.type === BackgroundType.color) {
-    return {
+    return of({
       background: background.color
-    };
+    });
   } else {
-    const imageUrl = background.type === BackgroundType.image ? background.imageBase64 : background.imageUrl;
+    const imageUrl = background.imageUrl;
     if (imageUrl) {
-      return {
-        background: `url(${imageUrl}) no-repeat 50% 50% / cover`
-      };
+      return imagePipe.transform(imageUrl, {asString: true, ignoreLoadingImage: true, preview}).pipe(
+        map((transformedUrl) => ({
+            background: sanitizer.bypassSecurityTrustStyle(`url(${transformedUrl}) no-repeat 50% 50% / cover`)
+          }))
+      );
     } else {
-      return {};
+      return of({});
     }
   }
 };
@@ -611,7 +631,7 @@ export const setLabel = (label: string, datasources?: Datasource[]): void => {
   }
 };
 
-export const getSingleTsValue = (data: Array<DatasourceData>): [number, any] => {
+export const getSingleTsValue = (data: Array<DatasourceData>): DataEntry => {
   if (data.length) {
     const dsData = data[0];
     if (dsData.data.length) {
@@ -621,7 +641,7 @@ export const getSingleTsValue = (data: Array<DatasourceData>): [number, any] => 
   return null;
 };
 
-export const getSingleTsValueByDataKey = (data: Array<DatasourceData>, dataKey: DataKey): [number, any] => {
+export const getSingleTsValueByDataKey = (data: Array<DatasourceData>, dataKey: DataKey): DataEntry => {
   if (data.length) {
     const dsData = data.find(d => d.dataKey === dataKey);
     if (dsData?.data?.length) {
@@ -631,7 +651,7 @@ export const getSingleTsValueByDataKey = (data: Array<DatasourceData>, dataKey: 
   return null;
 };
 
-export const getLatestSingleTsValue = (data: Array<DatasourceData>): [number, any] => {
+export const getLatestSingleTsValue = (data: Array<DatasourceData>): DataEntry => {
   if (data.length) {
     const dsData = data[0];
     if (dsData.data.length) {

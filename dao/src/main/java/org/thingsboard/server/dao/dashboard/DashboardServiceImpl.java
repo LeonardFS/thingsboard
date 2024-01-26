@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2023 The Thingsboard Authors
+ * Copyright © 2016-2024 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ import org.thingsboard.server.dao.eventsourcing.SaveEntityEvent;
 import org.thingsboard.server.dao.exception.DataValidationException;
 import org.thingsboard.server.dao.exception.IncorrectParameterException;
 import org.thingsboard.server.dao.model.sql.TenantEntity;
+import org.thingsboard.server.dao.resource.ImageService;
 import org.thingsboard.server.dao.service.DataValidator;
 import org.thingsboard.server.dao.service.PaginatedRemover;
 import org.thingsboard.server.dao.service.Validator;
@@ -95,6 +96,9 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
 
     @Autowired
     private EdgeDao edgeDao;
+
+    @Autowired
+    private ImageService imageService;
 
     @Autowired
     private DataValidator<Dashboard> dashboardValidator;
@@ -180,10 +184,11 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
             dashboardValidator.validate(dashboard, DashboardInfo::getTenantId);
         }
         try {
+            imageService.replaceBase64WithImageUrl(dashboard);
             var saved = dashboardDao.save(dashboard.getTenantId(), dashboard);
             publishEvictEvent(new DashboardTitleEvictEvent(saved.getId()));
             eventPublisher.publishEvent(SaveEntityEvent.builder().tenantId(saved.getTenantId())
-                    .entityId(saved.getId()).added(dashboard.getId() == null).build());
+                    .entityId(saved.getId()).created(dashboard.getId() == null).build());
             if (dashboard.getId() == null) {
                 countService.publishCountEntityEvictEvent(saved.getTenantId(), EntityType.DASHBOARD);
             }
@@ -196,6 +201,8 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
             throw e;
         }
     }
+
+
 
     @Override
     public Dashboard assignDashboardToCustomer(TenantId tenantId, DashboardId dashboardId, CustomerId customerId) {

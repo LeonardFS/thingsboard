@@ -20,7 +20,7 @@ import { LoginUIState, TenantUIState } from '@core/ui/tenant-ui.models';
 import { LoginUIActions, LoginUIActionTypes, TenantUIActions, TenantUIActionTypes } from '@core/ui/tenant-ui.actions';
 
 export const initialState: TenantUIState = {
-  applicationTitle: 'ThingsBoard',
+  applicationTitle: 'RequestIoT',
   iconImageUrl: null,
   logoImageUrl: null,
   logoImageHeight: null,

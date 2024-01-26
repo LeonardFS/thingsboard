@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2023 The Thingsboard Authors
+ * Copyright © 2016-2024 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
+import org.thingsboard.server.common.data.EntityInfo;
 import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.common.data.StringUtils;
 import org.thingsboard.server.common.data.asset.Asset;
@@ -36,14 +37,17 @@ import org.thingsboard.server.dao.entity.AbstractCachedEntityService;
 import org.thingsboard.server.dao.eventsourcing.DeleteEntityEvent;
 import org.thingsboard.server.dao.eventsourcing.SaveEntityEvent;
 import org.thingsboard.server.dao.exception.DataValidationException;
+import org.thingsboard.server.dao.resource.ImageService;
 import org.thingsboard.server.dao.service.DataValidator;
 import org.thingsboard.server.dao.service.PaginatedRemover;
 import org.thingsboard.server.dao.service.Validator;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.thingsboard.server.dao.service.Validator.validateId;
 
@@ -70,6 +74,9 @@ public class AssetProfileServiceImpl extends AbstractCachedEntityService<AssetPr
 
     @Autowired
     private DataValidator<AssetProfile> assetProfileValidator;
+
+    @Autowired
+    private ImageService imageService;
 
     @TransactionalEventListener(classes = AssetProfileEvictEvent.class)
     @Override
@@ -141,11 +148,12 @@ public class AssetProfileServiceImpl extends AbstractCachedEntityService<AssetPr
         }
         AssetProfile savedAssetProfile;
         try {
+            imageService.replaceBase64WithImageUrl(assetProfile, "asset profile");
             savedAssetProfile = assetProfileDao.saveAndFlush(assetProfile.getTenantId(), assetProfile);
             publishEvictEvent(new AssetProfileEvictEvent(savedAssetProfile.getTenantId(), savedAssetProfile.getName(),
                     oldAssetProfile != null ? oldAssetProfile.getName() : null, savedAssetProfile.getId(), savedAssetProfile.isDefault()));
             eventPublisher.publishEvent(SaveEntityEvent.builder().tenantId(savedAssetProfile.getTenantId()).entityId(savedAssetProfile.getId())
-                    .added(oldAssetProfile == null).build());
+                    .created(oldAssetProfile == null).build());
         } catch (Exception t) {
             handleEvictEvent(new AssetProfileEvictEvent(assetProfile.getTenantId(), assetProfile.getName(),
                     oldAssetProfile != null ? oldAssetProfile.getName() : null, null, assetProfile.isDefault()));
@@ -313,7 +321,16 @@ public class AssetProfileServiceImpl extends AbstractCachedEntityService<AssetPr
         return EntityType.ASSET_PROFILE;
     }
 
-    private PaginatedRemover<TenantId, AssetProfile> tenantAssetProfilesRemover =
+    @Override
+    public List<EntityInfo> findAssetProfileNamesByTenantId(TenantId tenantId, boolean activeOnly) {
+        log.trace("Executing findAssetProfileNamesByTenantId, tenantId [{}]", tenantId);
+        validateId(tenantId, INCORRECT_TENANT_ID + tenantId);
+        return assetProfileDao.findTenantAssetProfileNames(tenantId.getId(), activeOnly)
+                .stream().sorted(Comparator.comparing(EntityInfo::getName))
+                .collect(Collectors.toList());
+    }
+
+    private final PaginatedRemover<TenantId, AssetProfile> tenantAssetProfilesRemover =
             new PaginatedRemover<>() {
 
                 @Override

@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2023 The Thingsboard Authors
+/// Copyright © 2016-2024 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ export class LoginComponent extends PageComponent implements OnInit {
   formIconColor: string;
   formInputColor: string;
   logoHeight: string;
+  passwordViolation = false;
 
   loginFormGroup = this.fb.group({
     username: '',
@@ -121,6 +122,8 @@ export class LoginComponent extends PageComponent implements OnInit {
           if (error && error.error && error.error.errorCode) {
             if (error.error.errorCode === Constants.serverErrorCode.credentialsExpired) {
               this.router.navigateByUrl(`login/resetExpiredPassword?resetToken=${error.error.resetToken}`);
+            } else if (error.error.errorCode === Constants.serverErrorCode.passwordViolation) {
+              this.passwordViolation = true;
             }
           }
         }
